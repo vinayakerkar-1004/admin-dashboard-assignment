@@ -45,31 +45,24 @@ import type { User, ColumnMetadata } from '@/types';
  * 3. No error boundary or proper error UI.
  */
 export const UsersPage: React.FC = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const pageFromUrl = Number(searchParams.get('page')) || 1;
+  const statusFromUrl =
+  (searchParams.get('status') as 'all' | 'active' | 'inactive') || 'all';
+
   const { enqueueSnackbar } = useSnackbar();
 
   // Local state for filters
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [statusFilter, setStatusFilter] =
+  useState<'all' | 'active' | 'inactive'>(statusFromUrl);
   const [pagination, setPagination] = useState<MRT_PaginationState>({
-    pageIndex: 0,
-    pageSize: 10,
-  });
+  pageIndex: pageFromUrl - 1,
+  pageSize: 10,
+});
 
   // BUG #3: URL params are read but not used properly
   // This effect runs AFTER initial render, causing the pagination to reset
-  useEffect(() => {
-    const page = searchParams.get('page');
-    const status = searchParams.get('status');
-
-    if (page) {
-      // BUG: This runs after initial data fetch, causing a flicker
-      setPagination((prev) => ({ ...prev, pageIndex: parseInt(page) - 1 }));
-    }
-    if (status) {
-      setStatusFilter(status as 'all' | 'active' | 'inactive');
-    }
-  }, [searchParams]);
 
   // Fetch users - BUG: Search is not debounced!
   // TODO: Use the useDebounce hook to debounce the search query
@@ -111,14 +104,29 @@ export const UsersPage: React.FC = () => {
   const handleStatusFilterChange = (value: 'all' | 'active' | 'inactive') => {
     setStatusFilter(value);
     setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-    // BUG: URL is not updated when filter changes
-  };
+
+    setSearchParams((prev) => {
+      if (value === 'all') {
+        prev.delete('status');
+      } else {
+        prev.set('status', value);
+      }
+        prev.set('page', '1');
+        return prev;
+      });
+    };
 
   // Handle pagination change
   const handlePaginationChange = (newPagination: MRT_PaginationState) => {
     setPagination(newPagination);
-    // BUG: URL is not updated when pagination changes
-    // TODO: Update URL search params when pagination changes
+
+    setSearchParams((prev) => {
+      prev.set('page', String(newPagination.pageIndex + 1));
+      if (statusFilter !== 'all') {
+        prev.set('status', statusFilter);
+      }
+      return prev;
+    });
   };
 
   // Add actions column to metadata
