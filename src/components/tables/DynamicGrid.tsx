@@ -62,8 +62,8 @@ const renderCellByType = (
           {groups.map((group) => (
             <Chip
               // BUG: Wrong property being used for key and label
-              key={group.toString()}
-              label={group.toString()}
+              key={group.groupName}
+              label={group.groupName}
               size="small"
               variant="outlined"
             />
