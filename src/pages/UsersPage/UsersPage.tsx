@@ -19,6 +19,8 @@ import { useUsers, useUpdateUserStatus } from '@/hooks';
 import { userColumnMetadata } from '@/utils';
 import type { MRT_PaginationState } from 'material-react-table';
 import type { User, ColumnMetadata } from '@/types';
+import { useDebounce } from '@/hooks';
+import { TableSkeleton } from '@/components/';
 
 /**
  * Users Page Component
@@ -61,6 +63,8 @@ export const UsersPage: React.FC = () => {
   pageSize: 10,
 });
 
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
   // BUG #3: URL params are read but not used properly
   // This effect runs AFTER initial render, causing the pagination to reset
 
@@ -69,7 +73,7 @@ export const UsersPage: React.FC = () => {
   const { data, isLoading, error } = useUsers({
     page: pagination.pageIndex + 1,
     pageSize: pagination.pageSize,
-    query: searchQuery, // BUG: This updates on every keystroke
+    query: debouncedSearchQuery, // debounced
     status: statusFilter,
   });
 
@@ -95,7 +99,7 @@ export const UsersPage: React.FC = () => {
   // Handle search input change - BUG: Not debounced!
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
-    // TODO: Implement debouncing to prevent API calls on every keystroke
+  
     // Reset to first page when searching
     setPagination((prev) => ({ ...prev, pageIndex: 0 }));
   };
@@ -214,14 +218,18 @@ export const UsersPage: React.FC = () => {
 
       {/* Users Table */}
       <Paper>
-        <DynamicGrid
-          data={usersWithActions}
-          columns={columnsWithActions}
-          isLoading={isLoading}
-          totalCount={data?.data?.totalCount || 0}
-          pagination={pagination}
-          onPaginationChange={handlePaginationChange}
-        />
+        {isLoading ? (
+          <TableSkeleton columns={columnsWithActions.length} />
+        ) : (
+          <DynamicGrid
+            data={usersWithActions}
+            columns={columnsWithActions}
+            isLoading={false}
+            totalCount={data?.data?.totalCount || 0}
+            pagination={pagination}
+            onPaginationChange={handlePaginationChange}
+          />
+        )}
       </Paper>
     </Box>
   );
