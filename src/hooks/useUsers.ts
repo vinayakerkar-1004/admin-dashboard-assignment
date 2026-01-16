@@ -7,7 +7,6 @@ export const userQueryKeys = {
   all: ['users'] as const,
   list: (params: PaginationParams) => ['users', 'list', params] as const,
 };
-
 /**
  * Hook to fetch users with pagination and filters
  */
