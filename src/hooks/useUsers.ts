@@ -29,12 +29,56 @@ export const useUpdateUserStatus = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ userId, status }: { userId: string; status: 'active' | 'inactive' }) =>
-      updateUserStatus(userId, status),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
+    mutationFn: ({
+      userId,
+      status,
+    }: {
+      userId: string;
+      status: 'active' | 'inactive';
+    }) => updateUserStatus(userId, status),
+
+    // OPTIMISTIC UPDATE
+    onMutate: async ({ userId, status }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: userQueryKeys.all });
+
+      // Snapshot previous state
+      const previousQueries = queryClient.getQueriesData({
         queryKey: userQueryKeys.all,
       });
+
+      // Optimistically update ALL user lists
+      queryClient.setQueriesData(
+        { queryKey: userQueryKeys.all },
+        (old: any) => {
+          if (!old?.data?.users) return old;
+
+          return {
+            ...old,
+            data: {
+              ...old.data,
+              users: old.data.users.map((user: any) =>
+                user.id === userId ? { ...user, status } : user
+              ),
+            },
+          };
+        }
+      );
+
+      // Return context for rollback
+      return { previousQueries };
+    },
+
+    // ROLLBACK IF ERROR
+    onError: (_err, _vars, context) => {
+      context?.previousQueries?.forEach(([key, data]) => {
+        queryClient.setQueryData(key, data);
+      });
+    },
+
+    // SYNC WITH SERVER
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: userQueryKeys.all });
     },
   });
 };
