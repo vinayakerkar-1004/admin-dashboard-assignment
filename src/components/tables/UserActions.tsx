@@ -8,29 +8,25 @@ interface UserActionsProps {
   user: User;
   onToggleStatus: (userId: string, newStatus: 'active' | 'inactive') => void;
   isUpdating?: boolean;
+  onRequestDeactivate?: (user: User) => void;
 }
 
-/**
- * UserActions Component
- *
- * Renders action buttons for a user row.
- * Currently shows activate/deactivate toggle.
- *
- * TODO FOR CANDIDATE:
- * 1. Implement optimistic UI - update the button state immediately
- *    before the API call completes.
- * 2. Handle error case - revert the optimistic update if API fails.
- * 3. Add a confirmation dialog before deactivating a user (optional).
- */
 export const UserActions: React.FC<UserActionsProps> = ({
   user,
   onToggleStatus,
   isUpdating = false,
+  onRequestDeactivate,
 }) => {
   const handleToggle = () => {
-    const newStatus = user.status === 'active' ? 'inactive' : 'active';
+    if (user.status === 'active' && onRequestDeactivate) {
+      onRequestDeactivate(user);
+      return;
+    }
+
+    const newStatus = 'active';
     onToggleStatus(user.userId, newStatus);
   };
+
 
   if (isUpdating) {
     return <CircularProgress size={20} />;
@@ -38,18 +34,29 @@ export const UserActions: React.FC<UserActionsProps> = ({
 
   return (
     <Tooltip
-      title={user.status === 'active' ? 'Deactivate User' : 'Activate User'}
+      title={user.status === 'active' ? 'Deactivate user' : 'Activate user'}
     >
-      <IconButton
-        onClick={handleToggle}
-        color={user.status === 'active' ? 'error' : 'success'}
-        size="small"
-        aria-label={
-          user.status === 'active' ? 'Deactivate user' : 'Activate user'
-        }
-      >
-        {user.status === 'active' ? <CancelIcon /> : <CheckCircleIcon />}
-      </IconButton>
+      {/* span wrapper is REQUIRED so tooltip works when button is disabled */}
+      <span>
+        <IconButton
+          onClick={handleToggle}
+          size="small"
+          aria-label={user.status === 'active' ? 'Deactivate user' : 'Activate user'}
+          sx={{
+            color: user.status === 'active' ? 'error.main' : 'success.main',
+            transition: 'color 0.2s ease',
+            '&:hover': {
+              color:
+                user.status === 'active'
+                ? 'error.dark'
+                : 'success.dark',
+            },
+          }}
+        >
+          {user.status === 'active' ? <CancelIcon /> : <CheckCircleIcon />}
+        </IconButton>
+
+      </span>
     </Tooltip>
   );
 };

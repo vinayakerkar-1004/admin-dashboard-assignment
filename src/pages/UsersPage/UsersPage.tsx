@@ -21,6 +21,13 @@ import type { MRT_PaginationState } from 'material-react-table';
 import type { User, ColumnMetadata } from '@/types';
 import { useDebounce } from '@/hooks';
 import { TableSkeleton } from '@/components/';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+} from '@mui/material';
 
 /**
  * Users Page Component
@@ -47,10 +54,11 @@ import { TableSkeleton } from '@/components/';
  * 3. No error boundary or proper error UI.
  */
 export const UsersPage: React.FC = () => {
+  // throw new Error('Test error boundary');
   const [searchParams, setSearchParams] = useSearchParams();
   const pageFromUrl = Number(searchParams.get('page')) || 1;
-  const statusFromUrl =
-  (searchParams.get('status') as 'all' | 'active' | 'inactive') || 'all';
+  const statusFromUrl = (searchParams.get('status') as 'all' | 'active' | 'inactive') || 'all';
+  const [userToDeactivate, setUserToDeactivate] = useState<User | null>(null);
 
   const { enqueueSnackbar } = useSnackbar();
 
@@ -150,18 +158,31 @@ export const UsersPage: React.FC = () => {
     actions: (
       <UserActions
         user={user}
-        onToggleStatus={handleToggleStatus}
         isUpdating={isUpdating}
+        onToggleStatus={handleToggleStatus}
+        onRequestDeactivate={(user: User) => setUserToDeactivate(user)}
       />
     ),
   }));
 
+
   // Error state - TODO: Improve error UI
   if (error) {
     return (
-      <Alert severity="error" sx={{ mt: 2 }}>
-        Failed to load users: {error.message}
-      </Alert>
+      <Paper sx={{ p: 4, mt: 3, textAlign: 'center' }}>
+        <Typography variant="h6" gutterBottom>
+          Failed  to load users
+        </Typography>
+        <Typography color="text.secondary" sx={{ mb: 2 }}>
+          Something went wrong while fetching users. Please try again.
+        </Typography>
+        <Button
+          variant="contained"
+          onClick={() => window.location.reload()}
+        >
+          Retry
+        </Button>
+      </Paper>
     );
   }
 
@@ -231,6 +252,42 @@ export const UsersPage: React.FC = () => {
           />
         )}
       </Paper>
+      <Dialog
+  open={!!userToDeactivate}
+  onClose={() => setUserToDeactivate(null)}
+  aria-labelledby="deactivate-user-title"
+  aria-describedby="deactivate-user-description"
+>
+  <DialogTitle id="deactivate-user-title">
+    Deactivate User
+  </DialogTitle>
+
+  <DialogContent>
+    <Typography id="deactivate-user-description">
+      Are you sure you want to deactivate{' '}
+      <strong>{userToDeactivate?.name}</strong>?
+    </Typography>
+  </DialogContent>
+
+  <DialogActions>
+    <Button onClick={() => setUserToDeactivate(null)}>
+      Cancel
+    </Button>
+    <Button
+      color="error"
+      variant="contained"
+      onClick={() => {
+        if (userToDeactivate) {
+          handleToggleStatus(userToDeactivate.userId, 'inactive');
+          setUserToDeactivate(null);
+        }
+      }}
+    >
+      Deactivate
+    </Button>
+  </DialogActions>
+</Dialog>
+
     </Box>
   );
 };
