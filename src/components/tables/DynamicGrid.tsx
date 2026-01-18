@@ -8,6 +8,9 @@ import {
 import { Chip, Box } from '@mui/material';
 import type { ColumnMetadata, User, Group } from '@/types';
 import { formatDate } from '@/utils';
+import type { MRT_SortingState } from 'material-react-table';
+
+type VisibilityState = Record<string, boolean>;
 
 interface DynamicGridProps {
   data: User[];
@@ -16,7 +19,14 @@ interface DynamicGridProps {
   totalCount: number;
   pagination: MRT_PaginationState;
   onPaginationChange: (pagination: MRT_PaginationState) => void;
-  onRowAction?: (user: User, action: string) => void;
+
+  columnVisibility: VisibilityState;
+  onColumnVisibilityChange: (updater: VisibilityState | ((prev: VisibilityState) => VisibilityState)) => void;
+
+  sorting: MRT_SortingState;
+  onSortingChange: (
+    updater: MRT_SortingState | ((prev: MRT_SortingState) => MRT_SortingState)
+  ) => void;
 }
 
 /**
@@ -95,6 +105,10 @@ export const DynamicGrid: React.FC<DynamicGridProps> = ({
   totalCount,
   pagination,
   onPaginationChange,
+  columnVisibility,
+  onColumnVisibilityChange,
+  sorting,
+  onSortingChange,
 }) => {
   // Generate MRT columns from metadata
   const tableColumns = useMemo<MRT_ColumnDef<User>[]>(() => {
@@ -122,7 +136,18 @@ export const DynamicGrid: React.FC<DynamicGridProps> = ({
     state: {
       isLoading,
       pagination,
+      columnVisibility,
+      sorting,
     },
+
+    onSortingChange: (updater) => {
+    onSortingChange(updater);
+    },
+
+    onColumnVisibilityChange: (updater) => {
+      onColumnVisibilityChange(updater);
+    },
+
     onPaginationChange: (updater) => {
       const newPagination =
         typeof updater === 'function' ? updater(pagination) : updater;
@@ -131,7 +156,7 @@ export const DynamicGrid: React.FC<DynamicGridProps> = ({
     muiTableContainerProps: {
       sx: { maxHeight: '600px' },
     },
-    muiTableBodyRowProps: ({ row }) => ({
+    muiTableBodyRowProps: () => ({
       sx: {
         cursor: 'pointer',
         '&:hover': {
