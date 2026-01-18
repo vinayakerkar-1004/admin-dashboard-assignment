@@ -5,7 +5,8 @@ import {
   type MRT_ColumnDef,
   type MRT_PaginationState,
 } from 'material-react-table';
-import { Chip, Box } from '@mui/material';
+import { Chip, Stack } from '@mui/material';
+import { isAdmin } from '@/utils/roleUtils';
 import type { ColumnMetadata, User, Group } from '@/types';
 import { formatDate } from '@/utils';
 import type { MRT_SortingState } from 'material-react-table';
@@ -38,7 +39,8 @@ interface DynamicGridProps {
  */
 const renderCellByType = (
   value: unknown,
-  columnMeta: ColumnMetadata
+  columnMeta: ColumnMetadata,
+  row: User
 ): React.ReactNode => {
   switch (columnMeta.type) {
     case 'string':
@@ -67,18 +69,28 @@ const renderCellByType = (
         return <span style={{ color: '#999' }}>No groups</span>;
       }
 
+      const admin = isAdmin(row);
+
       return (
-        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-          {groups.map((group) => (
-            <Chip
-              // BUG: Wrong property being used for key and label
-              key={group.groupName}
-              label={group.groupName}
-              size="small"
-              variant="outlined"
-            />
-          ))}
-        </Box>
+      <Stack direction="row" spacing={0.5} flexWrap="wrap">
+        {admin && (
+          <Chip
+            label="Admin"
+            color="error"
+            size="small"
+            sx={{ fontWeight: 600 }}
+          />
+        )}
+
+        {groups.map((group) => (
+          <Chip
+            key={group.groupId}
+            label={group.groupName}
+            size="small"
+            variant="outlined"
+          />
+        ))}
+      </Stack>
       );
 
     default:
@@ -118,9 +130,9 @@ export const DynamicGrid: React.FC<DynamicGridProps> = ({
       size: colMeta.width,
       enableSorting: colMeta.sorting ?? false,
       enablePinning: !!colMeta.pinned,
-      Cell: ({ cell }) => {
+      Cell: ({ cell, row }) => {
         const value = cell.getValue();
-        return renderCellByType(value, colMeta);
+        return renderCellByType(value, colMeta, row.original);
       },
     }));
   }, [columns]);
