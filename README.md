@@ -71,6 +71,10 @@ See **ASSIGNMENT.md** for detailed instructions.
 
 ---
 
+## All items below have been completed as part of this submission.
+
+---
+
 ## Changes Made
 
 ###  Bug Fixes
@@ -81,15 +85,11 @@ See **ASSIGNMENT.md** for detailed instructions.
 - **Fix**: Added proper cache invalidation using `useQueryClient` to refetch the users list after a successful mutation.
 - **File Updated**: `src/hooks/useUsers.ts`
 
----
-
 #### 2. Groups Column Displaying `[object Object]`
 - **Issue**: The “Groups” column displayed `[object Object]` instead of readable group names.
 - **Cause**: Group objects were being rendered directly using `toString()` instead of accessing the correct display property.
 - **Fix**: Updated the chip renderer to use the `groupName` property for both the chip label and key.
 - **File Updated**: `src/components/tables/DynamicGrid.tsx`
-
----
 
 #### 3. Pagination and Filters Not Synced with URL
 - **Issue**: Pagination and status filters were not reflected in the URL, and refreshing the page reset the state to defaults.
@@ -110,20 +110,17 @@ Improved performance and smoother user experience
 - **Files Updated**: `src/hooks/useDebounce.ts`
 `src/pages/UsersPage/UsersPage.tsx`
 
----
-
 #### 2. Table Loading Skeleton
 - **Issue**: While fetching data, the users table displayed a generic loading spinner, causing layout shifts.
 - **Cause**: The table relied on the default loading indicator provided by the data grid.
 - **Fix**: Replaced the spinner with a table-shaped loading skeleton using MUI Skeleton, rendered conditionally during data loading.
-- **Result**: Immediate visual feedback during data fetch.
-No layout jump when the table data loads
+- **Result**: 
+    - Immediate visual feedback during data fetch.
+    - No layout jump when the table data loads
 -  **Files Updated**: `src/components/common/TableSkeleton.tsx`
 `src/components/common/index.ts`
 `src/components/index.ts`
 `src/pages/UsersPage/UsersPage.tsx`
-
----
 
 #### 3. Optimistic UI for Status Toggle
 - **Issue**:User status updates were reflected in the UI only after the API response, resulting in a noticeable delay.
@@ -145,21 +142,21 @@ Automatic rollback if the API request fails.
 Improved accessibility for keyboard and screen-reader users.
 Prevented accidental deactivation through confirmation dialog while keeping activation fast and seamless.
 - **Files Updated**: `src/components/tables/UserActions.tsx`
-`src/pages/UsersPage/UsersPage.tsx `
-
----
+`src/pages/UsersPage/UsersPage.tsx`
 
 #### 2.  Error Handling
 - **Issue**: The application did not gracefully handle runtime or API errors. API failures could leave the UI in an inconsistent state, and users had no way to retry failed requests without reloading the page.
 - **Cause**: There was no global error boundary for runtime crashes, and API error states were handled minimally without recovery options.
-- **Fix**: Added a global ErrorBoundary component to catch unexpected runtime errors and display a fallback UI.
-Improved API error handling for user fetch and status update operations.
-Implemented user-friendly error messages with retry support using React Query’s refetch method.
-Ensured mutation failures trigger proper rollback and snackbar error notifications without crashing the app.
-- **Result**: The application no longer crashes on runtime errors.
-Clear, user-friendly error messages are displayed on API failures.
-Users can retry failed requests without a full page reload.
-Status update failures rollback safely while keeping the UI responsive.
+- **Fix**: 
+    - Added a global ErrorBoundary component to catch unexpected runtime errors and display a fallback UI.
+    - Improved API error handling for user fetch and status update operations.
+    - Implemented user-friendly error messages with retry support using React Query’s refetch method.
+    - Ensured mutation failures trigger proper rollback and snackbar error notifications without crashing the app.
+- **Result**: 
+    - The application no longer crashes on runtime errors.
+    - Clear, user-friendly error messages are displayed on API failures.
+    - Users can retry failed requests without a full page reload.
+    - Status update failures rollback safely while keeping the UI responsive.
 - **Files Updated**: `src/components/ErrorBoundary.tsx`
 `src/main.tsx`
 `src/hooks/useUsers.ts`
@@ -169,7 +166,7 @@ Status update failures rollback safely while keeping the UI responsive.
 
 ### Bonus Features
 
-### Bonus A: Persist State in URL/localStorage
+## Bonus A: Persist State in URL/localStorage
 - **Issue**: Table state (pagination, sorting, filters) and column visibility were reset on page refresh failed requests without reloading the page.
 - **Cause**: State was managed locally without syncing to the URL or persisting user preferences.
 - **Fix**: Synced pagination, filters, search, and sorting to the URL. Persisted column visibility in localStorage.
@@ -177,9 +174,7 @@ Status update failures rollback safely while keeping the UI responsive.
 - **Files Updated**: `src/pages/UsersPage/UsersPage.tsx`
 `src/components/tables/DynamicGrid.tsx`
 
----
-
-### Bonus B: Unit Test
+## Bonus B: Unit Test
 - **Issue**: Core logic like debounced search and dynamic table cell rendering was untested, risking regressions.
 - **Cause**: No existing test setup and complex third-party table components made direct testing difficult.
 - **Fix**: Added unit tests using Vitest and React Testing Library for the useDebounce hook and metadata-driven DynamicGrid column rendering.
@@ -187,10 +182,7 @@ Status update failures rollback safely while keeping the UI responsive.
 - **Files Added**: `src/hooks/__tests__/useDebounce.test.tsx`
 `src/components/tables/__tests__/DynamicGrid.test.tsx`
 
-
----
-
-### Bonus C: Role-Based UI
+## Bonus C: Role-Based UI
 - **Issue**: All users could access status actions and admin users were not visually identifiable.
 - **Fix**: Added role-based checks derived from user groups to restrict actions to admins only, prevented admin-to-admin deactivation, and introduced a visual Admin badge in the table.
 - **Result**: Actions are permission-aware and admin users are clearly distinguished in the UI.
