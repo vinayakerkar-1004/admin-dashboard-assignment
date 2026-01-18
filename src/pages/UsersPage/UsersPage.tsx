@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Box,
@@ -9,7 +9,6 @@ import {
   Select,
   MenuItem,
   Paper,
-  Alert,
   InputAdornment,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
@@ -28,6 +27,7 @@ import {
   DialogActions,
   Button,
 } from '@mui/material';
+import type { MRT_SortingState } from 'material-react-table';
 
 /**
  * Users Page Component
@@ -58,12 +58,66 @@ export const UsersPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const pageFromUrl = Number(searchParams.get('page')) || 1;
   const statusFromUrl = (searchParams.get('status') as 'all' | 'active' | 'inactive') || 'all';
+  const queryFromUrl = searchParams.get('query') || '';
+  const sortFromUrl = searchParams.get('sort');
   const [userToDeactivate, setUserToDeactivate] = useState<User | null>(null);
 
   const { enqueueSnackbar } = useSnackbar();
 
+  const COLUMN_VISIBILITY_KEY = 'usersTableColumnVisibility';
+
+  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>(
+  () => {
+    const saved = localStorage.getItem(COLUMN_VISIBILITY_KEY);
+    return saved ? JSON.parse(saved) : {};
+  }
+);
+
+  useEffect(() => {
+  localStorage.setItem(
+    COLUMN_VISIBILITY_KEY,
+    JSON.stringify(columnVisibility)
+  );
+}, [columnVisibility]);
+
+  const [sorting, setSorting] = useState<MRT_SortingState>(() => {
+    if (!sortFromUrl) return [];
+
+    const [id, direction] = sortFromUrl.split(':');
+    return [
+      {
+        id,
+        desc: direction === 'desc',
+      },
+    ];
+  });
+  const prevSortingRef = useRef(sorting);
+
+  useEffect(() => {
+    const prevSorting = prevSortingRef.current;
+    const sortingChanged =
+      JSON.stringify(prevSorting) !== JSON.stringify(sorting);
+
+    setSearchParams((prev) => {
+      if (sorting.length === 0) {
+        prev.delete('sort');
+      } else {
+        const { id, desc } = sorting[0];
+        prev.set('sort', `${id}:${desc ? 'desc' : 'asc'}`);
+      }
+      if (sortingChanged) {
+        prev.set('page', '1');
+      }
+
+      return prev;
+    });
+
+    prevSortingRef.current = sorting;
+}, [sorting, setSearchParams]);
+
   // Local state for filters
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(queryFromUrl);
+
   const [statusFilter, setStatusFilter] =
   useState<'all' | 'active' | 'inactive'>(statusFromUrl);
   const [pagination, setPagination] = useState<MRT_PaginationState>({
@@ -71,7 +125,31 @@ export const UsersPage: React.FC = () => {
   pageSize: 10,
 });
 
+  useEffect(() => {
+    setPagination((prev) => ({
+      ...prev,
+      pageIndex: pageFromUrl - 1,
+    }));
+  }, [pageFromUrl]);
+
+  useEffect(() => {
+    setStatusFilter(statusFromUrl);
+  }, [statusFromUrl]);
+
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
+  useEffect(() => {
+    if (debouncedSearchQuery === queryFromUrl) return;
+    setSearchParams((prev) => {
+      if (debouncedSearchQuery) {
+        prev.set('query', debouncedSearchQuery);
+      } else {
+        prev.delete('query');
+      }
+      prev.set('page', '1'); 
+      return prev;
+    });
+  }, [debouncedSearchQuery, queryFromUrl, setSearchParams]);
 
   // BUG #3: URL params are read but not used properly
   // This effect runs AFTER initial render, causing the pagination to reset
@@ -107,8 +185,6 @@ export const UsersPage: React.FC = () => {
   // Handle search input change - BUG: Not debounced!
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
-  
-    // Reset to first page when searching
     setPagination((prev) => ({ ...prev, pageIndex: 0 }));
   };
 
@@ -164,7 +240,6 @@ export const UsersPage: React.FC = () => {
       />
     ),
   }));
-
 
   // Error state - TODO: Improve error UI
   if (error) {
@@ -249,45 +324,44 @@ export const UsersPage: React.FC = () => {
             totalCount={data?.data?.totalCount || 0}
             pagination={pagination}
             onPaginationChange={handlePaginationChange}
+            columnVisibility={columnVisibility}
+            onColumnVisibilityChange={setColumnVisibility}
+            sorting={sorting}            
+            onSortingChange={setSorting}  
           />
         )}
       </Paper>
       <Dialog
-  open={!!userToDeactivate}
-  onClose={() => setUserToDeactivate(null)}
-  aria-labelledby="deactivate-user-title"
-  aria-describedby="deactivate-user-description"
->
-  <DialogTitle id="deactivate-user-title">
-    Deactivate User
-  </DialogTitle>
+        open={!!userToDeactivate}
+        onClose={() => setUserToDeactivate(null)}
+        aria-labelledby="deactivate-user-title"
+        aria-describedby="deactivate-user-description"
+      >
+        <DialogTitle id="deactivate-user-title">Deactivate User</DialogTitle>
 
-  <DialogContent>
-    <Typography id="deactivate-user-description">
-      Are you sure you want to deactivate{' '}
-      <strong>{userToDeactivate?.name}</strong>?
-    </Typography>
-  </DialogContent>
+        <DialogContent>
+          <Typography id="deactivate-user-description">
+            Are you sure you want to deactivate{' '}
+            <strong>{userToDeactivate?.name}</strong>?
+          </Typography>
+        </DialogContent>
 
-  <DialogActions>
-    <Button onClick={() => setUserToDeactivate(null)}>
-      Cancel
-    </Button>
-    <Button
-      color="error"
-      variant="contained"
-      onClick={() => {
-        if (userToDeactivate) {
-          handleToggleStatus(userToDeactivate.userId, 'inactive');
-          setUserToDeactivate(null);
-        }
-      }}
-    >
-      Deactivate
-    </Button>
-  </DialogActions>
-</Dialog>
-
+        <DialogActions>
+          <Button onClick={() => setUserToDeactivate(null)}>Cancel</Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={() => {
+              if (userToDeactivate) {
+                handleToggleStatus(userToDeactivate.userId, 'inactive');
+                setUserToDeactivate(null);
+              }
+            }}
+          >
+            Deactivate
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

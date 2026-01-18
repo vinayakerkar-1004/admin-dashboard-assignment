@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchUsers, updateUserStatus } from '@/api';
 import type { PaginationParams } from '@/types';
+import { useSnackbar } from 'notistack';
 
 // Query keys
 export const userQueryKeys = {
@@ -14,6 +15,7 @@ export const useUsers = (params: PaginationParams) => {
   return useQuery({
     queryKey: userQueryKeys.list(params),
     queryFn: () => fetchUsers(params),
+    retry: 1,
   });
 };
 
@@ -26,6 +28,7 @@ export const useUsers = (params: PaginationParams) => {
  */
 export const useUpdateUserStatus = () => {
   const queryClient = useQueryClient();
+  const { enqueueSnackbar } = useSnackbar();
 
   return useMutation({
     mutationFn: ({
@@ -72,6 +75,10 @@ export const useUpdateUserStatus = () => {
     onError: (_err, _vars, context) => {
       context?.previousQueries?.forEach(([key, data]) => {
         queryClient.setQueryData(key, data);
+      });
+      
+      enqueueSnackbar('Failed to update status. Please try again.', {
+        variant: 'error',
       });
     },
 
