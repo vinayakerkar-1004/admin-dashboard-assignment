@@ -21,6 +21,9 @@ vi.mock('material-react-table', async () => {
                 cell: {
                   getValue: () => firstRow[col.accessorKey],
                 },
+                row: {
+                  original: firstRow, // ✅ THIS FIXES THE ERROR
+                },
               })}
             </div>
           ))}
