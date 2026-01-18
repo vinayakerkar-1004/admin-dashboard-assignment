@@ -2,6 +2,14 @@
 
 A pre-built admin dashboard with **intentional bugs** and **incomplete features** for you to fix and complete.
 
+## Live Demo
+https://admin-dashboard-assignment-ebon.vercel.app
+
+## GitHub Repository
+https://github.com/vinayakerkar-1004/admin-dashboard-assignment
+
+---
+
 ## Quick Start
 
 ```bash
